@@ -9,7 +9,7 @@ replacements = [
     ['D', 'ḍ'], ['sh', 'š'], ['aa', 'ā'], ['.', 'ʿ'], ['ḳh', 'x'], ['ġh', 'ɣ'], ["'", ''], ['ch', 'c'],
     ['kh', 'kʰ'], ['gh', 'gʰ'], ['ch', 'cʰ'], ['jh', 'jʰ'], ['ṭh', 'ṭʰ'], ['Ḍ', 'ḍ'], ['ḍh', 'ḍʰ'],
     ['th', 'tʰ'], ['dh', 'dʰ'], ['nh', 'nʰ'], ['ph', 'pʰ'], ['bh', 'bʰ'], ['mh', 'mʰ'], ['ai', 'ɛ'],
-    ['au', 'ɔ'], ['-', ' '], ['̤', '']
+    ['au', 'ɔ'], ['-', ' '], ['̤', ''], ['uu', 'ū'], ['ii', 'ī']
 ]
 
 // normalise the transliterations from Rekhta to something more familiar for me (IAST with some modifications)
