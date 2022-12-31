@@ -3,6 +3,8 @@ var canon = document.getElementById('canonicalised')
 var syllable = document.getElementById('syllabified')
 var metre = document.getElementById('metred')
 
+/* CANONICALISE */
+
 replacements = [
     ['D', 'ḍ'], ['sh', 'š'], ['aa', 'ā'], ['.', 'ʿ'], ['ḳh', 'x'], ['ġh', 'ɣ'], ["'", ''], ['ch', 'c'],
     ['kh', 'kʰ'], ['gh', 'gʰ'], ['ch', 'cʰ'], ['jh', 'jʰ'], ['ṭh', 'ṭʰ'], ['Ḍ', 'ḍ'], ['ḍh', 'ḍʰ'],
@@ -10,12 +12,15 @@ replacements = [
     ['au', 'ɔ'], ['-', ' '], ['̤', '']
 ]
 
+// normalise the transliterations from Rekhta to something more familiar for me (IAST with some modifications)
 function canonicalise(text) {
     replacements.forEach(d => {
         text = text.replaceAll(d[0], d[1]) 
     });
     return text
 }
+
+/* SYLLABIFY */
 
 vowel = 'aiuāīūeoɛɔ'
 short = 'aiu'
@@ -25,8 +30,8 @@ flexibles = [
     'kā', 'ke', 'kī', 'ko', 'meñ', 'mɛñ', 'ne', 'vuh', 'vo', 'ye', 'yih', 'ho', 'hūñ', 'hoñ', 'hī', 'hɛ', 'hɛñ', 'yūñ'
 ]
 
+// syllabify a single line of poetry, including syllable weight (heavy or light)
 function syllabify_line(line) {
-
     // C > .C
     res = ''
     for (var i = 0; i < line.length; i++) {
@@ -75,6 +80,8 @@ function syllabify_line(line) {
 }
 
 // recursively generate space grafting combinations
+// returns a list of all possible combinations of graftings
+// e.g. "a b c" > ["ab c", "a bc", "abc"]
 function make_graft_recursive(line) {
     var line_w = line.replace(/([^aiuāīūeoɛɔ]ʰ?) ([aiuāīūeoɛɔ])/, '$1-$2')
     if (line_w == line) return [line.replaceAll('-', ' ')]
@@ -82,6 +89,8 @@ function make_graft_recursive(line) {
     return [].concat(make_graft_recursive(line_w)).concat(make_graft_recursive(line_s))
 }
 
+// syllabify the whole verse, including cleanup like trimming whitespace
+// also handles vowel-vowel combos
 function syllabify(text) {
     lines = text.split('\n')
     var res = []
@@ -103,6 +112,9 @@ function syllabify(text) {
     return res
 }
 
+/* METRIFY */
+
+// all the metres
 var metres = {
     '====-=-==': ['= = = / = - = / - = =', 'hazaj musaddas aḳhram ashtar maḥżūf'],
     '==-====-==': ['= = / - = = // = = / - = =', 'mutaqārib muṡamman aṡram'],
@@ -158,6 +170,7 @@ var metres = {
 }
 
 // recursively generate combinations of weak/heavy for flexible syllables
+// e.g. [flex][flex] > [HH, HL, LH, LL]
 function make_flex_recursive(line) {
     var line_w = line.replace('[syll flex]', '-')
     if (line_w == line) return [line]
@@ -165,6 +178,8 @@ function make_flex_recursive(line) {
     return [].concat(make_flex_recursive(line_w)).concat(make_flex_recursive(line_s))
 }
 
+// generate all metrical scansion hypotheses for a line, keeping the likely ones (the ones used in Urdu poetry)
+// at the top
 function metrify(line) {
     var l = line
     line = line.replaceAll(/<span class="(syll|syll light|syll flex)">[^<]*?<\/span>[· ]?/g, '[$1]')
@@ -186,6 +201,7 @@ function metrify(line) {
     return hypo.concat(rand)
 }
 
+// add syllable weight annotations to each syllable using HTML ruby
 function rubify(syll, m) {
     var metre = m[0].replaceAll('-', '–').replaceAll('=', '×')
     for (var i = 0; i < metre.length; i++) {
@@ -199,12 +215,15 @@ function rubify(syll, m) {
     return syll
 }
 
+// function that runs the whole scansion process every time the textarea is updated
 function update() {
+    // canonicalise and syllabify
     var t = text.value.replaceAll(/\n+/g, '\n')
     var c = canonicalise(t)
     canon.innerHTML = c.replaceAll('\n', '<br>')
     var lines = syllabify(c)
     
+    // generate metrical hypotheses and make them pretty
     var res = ''
     var counts = {}
     lines.forEach((l, verse) => {
@@ -224,6 +243,7 @@ function update() {
         res += `<button type="button" class="collapsible">${all[0]}</button><div class="content">${all.slice(1).join('\n')}</div>`
     })
 
+    // count found metres and list by # of verses they can fit for
     var ct = '<p>The following metres could be found in this poem:<ul>'
     var keys = Object.keys(counts)
     keys.sort((a, b) => counts[a].length - counts[b].length)
@@ -233,6 +253,7 @@ function update() {
     })
     ct += '</ul></p>'
     
+    // list all the metrical scansion hypotheses for each line, make it pretty and collapsible
     metred.innerHTML = ct + '<h3>Line-by-line</h3><p>Click each line to view possible metrical scansions.</p>' + res
 
     var coll = document.getElementsByClassName("collapsible");
@@ -251,5 +272,6 @@ function update() {
     }
 }
 
+// set up auto-run
 update()
 text.addEventListener('keyup', d => {update()}, false)
