@@ -180,6 +180,11 @@ var metres = {
     '--=-=--=-=--=-=--=-=': ['- - = - = / - - = - = / - - = - = / - - = - =', 'kāmil muṡamman sālim'],
 }
 
+// add metres w/ final cheat short syllable
+for (key in metres) {
+    metres[key + '-'] = metres[key]
+}
+
 // recursively generate combinations of weak/heavy for flexible syllables
 // e.g. [flex][flex] > [HH, HL, LH, LL]
 function make_flex_recursive(line) {
