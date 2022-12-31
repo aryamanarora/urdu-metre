@@ -115,6 +115,9 @@ function syllabify(text) {
 
         var s = make_graft_recursive(line)
         s = s.map(syllabify_line)
+
+        // filter out things that violate the 3-light-syllable rule
+        console.log(s)
         res.push(s)
     })
     return res
@@ -235,10 +238,20 @@ function update() {
     var res = ''
     var counts = {}
     lines.forEach((l, verse) => {
+        // get hypotheses
         var m = []
         l.forEach(x => {m = m.concat(metrify(x))})
+
+        // filter out three light syllables in a row
+        m = m.filter(d => {
+            console.log('filtering', d[2])
+            return d[0].search('---') == -1
+        })
+
+        // named metres listed first
         m.sort((a, b) => ((a[1] == null) - (b[1] == null)))
-        console.log(m)
+
+        // pretty printed versions + ruby
         var all = []
         m.forEach((d, i) => {
             if (d[1] != null) {
