@@ -74,6 +74,7 @@ function syllabify_line(line) {
         l = /(^| )<span class="(syll|syll light)">/g
         r = /<\/span>($| )/g
         line = line.replaceAll(new RegExp(l.source + d + r.source, 'g'), `$1<span class="syll flex">${d}</span>$3`)
+        line = line.replaceAll(new RegExp(l.source + d + r.source, 'g'), `$1<span class="syll flex">${d}</span>$3`)
     })
 
     // eoɛɔ can be flexible if in second syllable or later
