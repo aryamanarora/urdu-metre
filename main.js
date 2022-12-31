@@ -41,6 +41,10 @@ function syllabify_line(line) {
         else res += '.' + char
     }
 
+    // VV > V.V
+    res = res.replaceAll(/([aiuāīūeoɛɔ])([aiuāīūeoɛɔ])/g, '$1.$2')
+    res = res.replaceAll(/([aiuāīūeoɛɔ])([aiuāīūeoɛɔ])/g, '$1.$2')
+
     // CV̆.C. > CV̆C.
     res = res.replaceAll(/[aiu]ñ?\..ʰ?([\. ]|$)/g, d => d.replace('.', ''))
 
@@ -75,6 +79,9 @@ function syllabify_line(line) {
     // eoɛɔ can be flexible if in second syllable or later
     line = line.replaceAll(/·<span class="(syll light|syll)">([^<]*?[eoɛɔ])<\/span>/g, '·<span class="syll flex">$2</span>')
     line = line.replaceAll(/ <span class="(syll light|syll)">([eo])<\/span> /g, ' <span class="syll flex">$2</span> ')
+
+    // koī is flexible
+    line = line.replaceAll(/<span class="syll">ko<\/span>·<span class="syll">ī<\/span>/g, '<span class="syll flex">ko<\/span>·<span class="syll flex">ī<\/span>')
 
     return line
 }
