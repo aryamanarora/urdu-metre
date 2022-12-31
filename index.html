@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Metre</title>
+    <style>
+        body {max-width: 40em; margin: auto; font-family: sans-serif;}
+        p {line-height: 1.3em;}
+        .syll {background-color: lightskyblue;}
+        .light {background-color: lightsalmon !important;}
+        .flex {background-color: lightseagreen !important;}
+        .anno {font-size: 70%; font-style: italic;}
+        /* Style the button that is used to open and close the collapsible content */
+        .collapsible {
+            cursor: pointer;
+            padding-left: 10px;
+            width: 100%;
+            border: none;
+            text-align: left;
+            outline: none;
+            font-size: 100%;
+        }
+        .collapsible > p, .content > p {
+            margin: 5px 0px;
+        }
+
+        /* Add a background color to the button if it is clicked on (add the .active class with JS), and when you move the mouse over it (hover) */
+        .active, .collapsible:hover {
+            background-color: #ccc;
+        }
+
+        /* Style the collapsible content. Note: hidden by default */
+        .content {
+            padding-left: 20px;
+            display: none;
+            overflow: hidden;
+            background-color: #ddd;
+        }
+
+        .res {
+            padding: 0 10px;
+            width: 100%;
+            border: 1px black solid;
+            max-width: 40em;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Urdu metre</h1>
+    <p>This is a small tool for automatically doing metrical scansion of Urdu poetry, based on the guide by <a href="http://www.columbia.edu/itc/mealac/pritchett/00ghalib/meterbk/00_intro.html">Pritchett and Khaliq (2003)</a>. All possible variant readings are not fully supported yet but this will make understanding metre a little easier by automatically checking complex variants like word-boundary grafting. Paste a text from Rekhta below (or use an IAST-esque transliteration) to generate scansion.</p>
+    <p>Made by <a href="https://aryamanarora.github.io/">Aryaman Arora</a>.</p>
+    <textarea id="text" name="text" style="width: 100%; height: 5em; margin: 0;" placeholder="Transliterated text from Rekhta...">ḳhudī ko kar buland itnā ki har taqdīr se pahle
+ḳhudā bande se ḳhud pūchhe batā terī razā kyā hai</textarea>
+    <div class="res">
+    <h2>Canonicalised</h2>
+    <p id="canonicalised"></p>
+    <!-- <h2>Syllabified</h2>
+    <p id="syllabified"></p> -->
+    <h2>Metrical analysis</h2>
+    <p id="metred"></p>
+    <script src="main.js"></script>
+    </div>
+</body>
+</html>
