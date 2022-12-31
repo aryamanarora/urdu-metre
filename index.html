@@ -6,7 +6,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Metre</title>
     <style>
-        body {max-width: 40em; margin: auto; font-family: sans-serif;}
+        @font-face {
+            font-family: "Charis SIL";
+            src: url("/assets/fonts/CharisSIL-Regular.ttf");
+            font-style: normal;
+        }
+        @font-face {
+            font-family: "Charis SIL";
+            src: url("/assets/fonts/CharisSIL-Bold.ttf");
+            font-weight: bold;
+        }
+        @font-face {
+            font-family: "Charis SIL";
+            src: url("/assets/fonts/CharisSIL-Italic.ttf");
+            font-style: italic;
+        }
+        @font-face {
+            font-family: "Charis SIL";
+            src: url("/assets/fonts/CharisSIL-BoldItalic.ttf");
+            font-weight: bold;
+            font-style: italic;
+        }
+        body {max-width: 40em; margin: auto; padding: 20px; font-family: 'Charis SIL', sans-serif;}
         p {line-height: 1.3em;}
         .syll {background-color: lightskyblue;}
         .light {background-color: lightsalmon !important;}
@@ -41,7 +62,6 @@
 
         .res {
             padding: 0 10px;
-            width: 100%;
             border: 1px black solid;
             max-width: 40em;
             margin: 20px 0;
