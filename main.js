@@ -117,7 +117,6 @@ function syllabify(text) {
         s = s.map(syllabify_line)
 
         // filter out things that violate the 3-light-syllable rule
-        console.log(s)
         res.push(s)
     })
     return res
@@ -182,6 +181,7 @@ var metres = {
 
 // add metres w/ final cheat short syllable
 for (key in metres) {
+    metres[key][0] =  metres[key][0].replaceAll('-', '–').replaceAll('=', '×')
     metres[key + '-'] = metres[key]
 }
 
@@ -249,7 +249,6 @@ function update() {
 
         // filter out three light syllables in a row
         m = m.filter(d => {
-            console.log('filtering', d[2])
             return d[0].search('---') == -1
         })
 
@@ -260,7 +259,7 @@ function update() {
         var all = []
         m.forEach((d, i) => {
             if (d[1] != null) {
-                var name = canonicalise(d[1][1])
+                var name = d[0]
                 if (!(name in counts)) counts[name] = {}
                 counts[name][verse] = true
             }
@@ -275,7 +274,7 @@ function update() {
     keys.sort((a, b) => counts[a].length - counts[b].length)
     keys.forEach(n => {
         var len = Object.keys(counts[n]).length
-        ct += `<li>${n} <span class="anno">(${len} / ${lines.length})</span></li>`
+        ct += `<li>${canonicalise(metres[n][1])} <span class="anno">(${len} / ${lines.length})</span><br>${metres[n][0]}</li>`
     })
     ct += '</ul></p>'
     
