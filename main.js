@@ -84,6 +84,7 @@ flexibles = [
   "hɛ",
   "hɛñ",
   "yūñ",
+  "pe",
 ];
 
 // syllabify a single line of poetry, including syllable weight (heavy or light)
@@ -172,6 +173,12 @@ function syllabify_line(line) {
   line = line.replaceAll(
     /<span class="syll">ko<\/span>·<span class="syll">ī<\/span>/g,
     '<span class="syll flex">ko<\/span>·<span class="syll flex">ī<\/span>',
+  );
+
+  // nahīñ - second syllable can scan short
+  line = line.replaceAll(
+    /<span class="syll light">na<\/span>·<span class="syll">hīñ<\/span>/g,
+    '<span class="syll light">na<\/span>·<span class="syll flex">hīñ<\/span>',
   );
 
   return line;
@@ -417,6 +424,37 @@ function make_flex_recursive(line) {
     .concat(make_flex_recursive(line_s));
 }
 
+// edit distance between two metrical pattern strings
+function editDist(a, b) {
+  var m = a.length,
+    n = b.length;
+  var dp = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+  for (var i = 0; i <= m; i++) dp[i][0] = i;
+  for (var j = 0; j <= n; j++) dp[0][j] = j;
+  for (var i = 1; i <= m; i++)
+    for (var j = 1; j <= n; j++)
+      dp[i][j] = Math.min(
+        dp[i - 1][j] + 1,
+        dp[i][j - 1] + 1,
+        dp[i - 1][j - 1] + (a[i - 1] !== b[j - 1] ? 1 : 0),
+      );
+  return dp[m][n];
+}
+
+// find the closest known metre to a pattern string
+function closestMetre(pattern) {
+  var bestDist = 999,
+    bestKey = null;
+  for (var key in metres) {
+    var d = editDist(pattern, key);
+    if (d < bestDist) {
+      bestDist = d;
+      bestKey = key;
+    }
+  }
+  return bestKey != null ? [bestKey, metres[bestKey], bestDist] : null;
+}
+
 // generate all metrical scansion hypotheses for a line, keeping the likely ones (the ones used in Urdu poetry)
 // at the top
 function metrify(line) {
@@ -440,12 +478,35 @@ function metrify(line) {
     } else rand.push([d, null, l]);
   });
 
+  // if no exact match, find the closest known metre for the best unmatched hypothesis
+  if (hypo.length == 0 && rand.length > 0) {
+    var bestRand = null,
+      bestRandDist = 999;
+    rand.forEach((d) => {
+      var c = closestMetre(d[0]);
+      if (c && c[2] < bestRandDist) {
+        bestRand = d;
+        bestRandDist = c[2];
+        bestRand[1] = c; // [pattern, metreInfo, dist]
+      }
+    });
+    if (bestRand) {
+      // move the best approximate match to the front
+      rand = rand.filter((d) => d !== bestRand);
+      rand.unshift(bestRand);
+    }
+  }
+
   return hypo.concat(rand);
 }
 
 // add syllable weight annotations to each syllable using HTML ruby
 function rubify(syll, m) {
-  var metre = m[0].replaceAll("-", "–").replaceAll("=", "×");
+  var isApprox = m[1] != null && Array.isArray(m[1]) && m[1].length == 3;
+  // for approximate matches, use the gold (closest metre) pattern for ruby
+  var metre = isApprox
+    ? m[1][0].replaceAll("-", "–").replaceAll("=", "×")
+    : m[0].replaceAll("-", "–").replaceAll("=", "×");
   for (var i = 0; i < metre.length; i++) {
     var weight = metre[i];
     var label = weight == "×" ? "syll" : "syll light";
@@ -454,8 +515,13 @@ function rubify(syll, m) {
       `<span class="done ${label}"><ruby>$2<rt>${weight}</rt></ruby></span>`,
     );
   }
-  syll +=
-    m[1] != null ? ` <span class="anno">(${canonicalise(m[1][1])})</span>` : "";
+  if (isApprox) {
+    var metreInfo = m[1][1];
+    var dist = m[1][2];
+    syll += ` <span class="anno" style="opacity:0.6">(≈${canonicalise(metreInfo[1])}, dist ${dist})</span>`;
+  } else if (m[1] != null) {
+    syll += ` <span class="anno">(${canonicalise(m[1][1])})</span>`;
+  }
   syll = syll.replaceAll("done ", "");
   if (m[1] == null)
     syll = syll.replaceAll(
@@ -476,6 +542,8 @@ function update() {
   // generate metrical hypotheses and make them pretty
   var res = "";
   var counts = {};
+  var approxCounts = {};
+  var noMatchCount = 0;
   lines.forEach((l, verse) => {
     // get hypotheses
     var m = [];
@@ -488,13 +556,20 @@ function update() {
       return d[0].search("---") == -1;
     });
 
-    // named metres listed first
-    m.sort((a, b) => (a[1] == null) - (b[1] == null));
+    // exact matches first, then approximate, then unmatched
+    function matchRank(d) {
+      if (d[1] == null) return 2; // no match
+      if (Array.isArray(d[1]) && d[1].length == 3) return 1; // approximate
+      return 0; // exact
+    }
+    m.sort((a, b) => matchRank(a) - matchRank(b));
 
     // pretty printed versions + ruby
     var all = [];
+    var hasExact = m.some((d) => matchRank(d) == 0);
     m.forEach((d, i) => {
-      if (d[1] != null) {
+      if (matchRank(d) == 0) {
+        // count exact matches
         var name = d[0];
         if (!(name in counts)) counts[name] = {};
         counts[name][verse] = true;
@@ -503,17 +578,77 @@ function update() {
         `<p>${i == 0 ? "" : '<span class="anno">' + (i + 1) + " — </span>"}${rubify(d[2], d)}</p>`,
       );
     });
+
+    // if no exact match, count the single lowest-distance approximate
+    if (!hasExact) {
+      var bestApprox = null,
+        bestApproxDist = 999;
+      m.forEach((d) => {
+        if (matchRank(d) == 1 && d[1][2] < bestApproxDist) {
+          bestApproxDist = d[1][2];
+          bestApprox = d;
+        }
+      });
+      if (bestApprox) {
+        var metreName = canonicalise(bestApprox[1][1][1]);
+        if (!(metreName in approxCounts)) approxCounts[metreName] = {};
+        approxCounts[metreName][verse] = true;
+      } else {
+        noMatchCount++;
+      }
+    }
+
     res += `<button type="button" class="collapsible">${all[0]}</button><div class="content">${all.slice(1).join("\n")}</div>`;
   });
 
   // count found metres and list by # of verses they can fit for
-  var ct = "<p>The following metres could be found in this poem:<ul>";
-  var keys = Object.keys(counts);
-  keys.sort((a, b) => counts[a].length - counts[b].length);
-  keys.forEach((n) => {
-    var len = Object.keys(counts[n]).length;
-    ct += `<li>${canonicalise(metres[n][1])} <span class="anno">(${len} / ${lines.length})</span><br>${metres[n][0]}</li>`;
+  // merge exact counts (keyed by pattern) into counts by name
+  var countsByName = {};
+  Object.keys(counts).forEach((n) => {
+    var name = canonicalise(metres[n][1]);
+    if (!(name in countsByName))
+      countsByName[name] = { verses: {}, visual: metres[n][0] };
+    Object.assign(countsByName[name].verses, counts[n]);
   });
+  // merge in approx counts
+  Object.keys(approxCounts).forEach((name) => {
+    if (!(name in countsByName)) {
+      // look up the visual pattern for this metre name
+      var visual = "";
+      for (var mk in metres) {
+        if (canonicalise(metres[mk][1]) == name) { visual = metres[mk][0]; break; }
+      }
+      countsByName[name] = { verses: {}, visual: visual };
+    }
+    // don't overwrite exact matches — only count approx for verses not already exact
+    if (!countsByName[name].approxVerses) countsByName[name].approxVerses = {};
+    Object.keys(approxCounts[name]).forEach((v) => {
+      if (!(v in countsByName[name].verses))
+        countsByName[name].approxVerses[v] = true;
+    });
+  });
+
+  var ct = "<p>The following metres could be found in this poem:<ul>";
+  var nameKeys = Object.keys(countsByName);
+  nameKeys.sort((a, b) => {
+    var aTotal =
+      Object.keys(countsByName[a].verses).length +
+      Object.keys(countsByName[a].approxVerses || {}).length;
+    var bTotal =
+      Object.keys(countsByName[b].verses).length +
+      Object.keys(countsByName[b].approxVerses || {}).length;
+    return bTotal - aTotal;
+  });
+  nameKeys.forEach((name) => {
+    var exact = Object.keys(countsByName[name].verses).length;
+    var approx = Object.keys(countsByName[name].approxVerses || {}).length;
+    var label = `${exact} / ${lines.length}`;
+    if (approx > 0) label += ` + ≈${approx}`;
+    ct += `<li>${name} <span class="anno">(${label})</span><br>${countsByName[name].visual}</li>`;
+  });
+  if (noMatchCount > 0) {
+    ct += `<li style="opacity:0.5">no match <span class="anno">(${noMatchCount} / ${lines.length})</span></li>`;
+  }
   ct += "</ul></p>";
 
   // list all the metrical scansion hypotheses for each line, make it pretty and collapsible
